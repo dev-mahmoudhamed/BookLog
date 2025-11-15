@@ -1,4 +1,4 @@
-package service
+package book
 
 import "bookLog/internal/models"
 

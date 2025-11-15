@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"bookLog/internal/models"
-	service "bookLog/internal/services"
+	service "bookLog/internal/services/book"
 	"net/http"
 	"strconv"
 
