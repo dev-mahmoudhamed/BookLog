@@ -14,8 +14,9 @@ func NewBookService(repo repository.BookRepository) BookService {
 	return &bookService{repo: repo}
 }
 
-func (s *bookService) GetAllBooks() ([]models.Book, error) {
-	return s.repo.GetAll()
+func (s *bookService) GetAllBooks(page, limit int, search string) ([]models.Book, int, error) {
+	offset := (page - 1) * limit
+	return s.repo.GetAll(limit, offset, search)
 }
 
 func (s *bookService) GetBookByID(id int) (*models.Book, error) {

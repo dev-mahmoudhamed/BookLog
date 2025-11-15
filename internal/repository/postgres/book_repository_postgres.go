@@ -4,6 +4,7 @@ import (
 	"bookLog/internal/models"
 	"bookLog/internal/repository"
 	"database/sql"
+	"fmt"
 )
 
 type BookRepositoryPostgres struct {
@@ -14,22 +15,60 @@ func NewBookRepositoryPostgres(db *sql.DB) repository.BookRepository {
 	return &BookRepositoryPostgres{db: db}
 }
 
-func (r *BookRepositoryPostgres) GetAll() ([]models.Book, error) {
-	rows, err := r.db.Query("SELECT id, title, author, published_year, created_at FROM books ORDER BY id ASC")
+func (r *BookRepositoryPostgres) GetAll(limit, offset int, search string) ([]models.Book, int, error) {
+	query := `
+        SELECT id, title, author, published_year, created_at
+        FROM books
+        WHERE 1=1
+    `
+	args := []interface{}{}
+	idx := 1
+
+	// --- 2. Add search filter ---
+	if search != "" {
+		query += fmt.Sprintf(" AND title ILIKE $%d", idx)
+		args = append(args, "%"+search+"%")
+		idx++
+	}
+
+	// --- 3. Add ordering, pagination ---
+	query += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d OFFSET $%d", idx, idx+1)
+	args = append(args, limit, offset)
+
+	// --- 4. Query rows ---
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 
 	var books []models.Book
 	for rows.Next() {
 		var b models.Book
+
 		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.PublishedYear, &b.CreatedAt); err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		books = append(books, b)
 	}
-	return books, nil
+
+	// --- 5. Count total ---
+	totalQuery := `SELECT COUNT(*) FROM books WHERE 1=1`
+	totalArgs := []interface{}{}
+	idx = 1
+
+	if search != "" {
+		totalQuery += fmt.Sprintf(" AND title ILIKE $%d", idx)
+		totalArgs = append(totalArgs, "%"+search+"%")
+	}
+
+	var total int
+	if err := r.db.QueryRow(totalQuery, totalArgs...).Scan(&total); err != nil {
+		return nil, 0, err
+	}
+
+	return books, total, nil
+
 }
 
 func (r *BookRepositoryPostgres) GetByID(id int) (*models.Book, error) {

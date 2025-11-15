@@ -18,12 +18,23 @@ func NewBookHandler(s service.BookService) *BookHandler {
 }
 
 func (h *BookHandler) GetBooks(c *gin.Context) {
-	books, err := h.service.GetAllBooks()
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	search := c.Query("search")
+
+	books, total, err := h.service.GetAllBooks(page, limit, search)
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, books)
+	c.JSON(200, gin.H{
+		"data":  books,
+		"total": total,
+		"page":  page,
+		"limit": limit,
+	})
 }
 
 func (h *BookHandler) GetBookByID(c *gin.Context) {
