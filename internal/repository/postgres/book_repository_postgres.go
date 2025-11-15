@@ -4,7 +4,8 @@ import (
 	"bookLog/internal/models"
 	"bookLog/internal/repository"
 	"database/sql"
-	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
 )
 
 type BookRepositoryPostgres struct {
@@ -16,27 +17,28 @@ func NewBookRepositoryPostgres(db *sql.DB) repository.BookRepository {
 }
 
 func (r *BookRepositoryPostgres) GetAll(limit, offset int, search string) ([]models.Book, int, error) {
-	query := `
-        SELECT id, title, author, published_year, created_at
-        FROM books
-        WHERE 1=1
-    `
-	args := []interface{}{}
-	idx := 1
+	// Build the query with Squirrel
+	query := sq.Select("id", "title", "author", "published_year", "created_at").
+		From("books")
 
-	// --- 2. Add search filter ---
+	// Add search filter if provided
 	if search != "" {
-		query += fmt.Sprintf(" AND title ILIKE $%d", idx)
-		args = append(args, "%"+search+"%")
-		idx++
+		query = query.Where(sq.ILike{"title": "%" + search + "%"})
 	}
 
-	// --- 3. Add ordering, pagination ---
-	query += fmt.Sprintf(" ORDER BY id ASC LIMIT $%d OFFSET $%d", idx, idx+1)
-	args = append(args, limit, offset)
+	// Build and execute the query with pagination
+	sql, args, err := query.
+		OrderBy("id ASC").
+		Limit(uint64(limit)).
+		Offset(uint64(offset)).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 
-	// --- 4. Query rows ---
-	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	rows, err := r.db.Query(sql, args...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -45,35 +47,45 @@ func (r *BookRepositoryPostgres) GetAll(limit, offset int, search string) ([]mod
 	var books []models.Book
 	for rows.Next() {
 		var b models.Book
-
 		if err := rows.Scan(&b.ID, &b.Title, &b.Author, &b.PublishedYear, &b.CreatedAt); err != nil {
 			return nil, 0, err
 		}
 		books = append(books, b)
 	}
 
-	// --- 5. Count total ---
-	totalQuery := `SELECT COUNT(*) FROM books WHERE 1=1`
-	totalArgs := []interface{}{}
-	idx = 1
+	// Count total records
+	countQuery := sq.Select("COUNT(*)").From("books")
 
 	if search != "" {
-		totalQuery += fmt.Sprintf(" AND title ILIKE $%d", idx)
-		totalArgs = append(totalArgs, "%"+search+"%")
+		countQuery = countQuery.Where(sq.ILike{"title": "%" + search + "%"})
+	}
+
+	countSql, countArgs, err := countQuery.PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		return nil, 0, err
 	}
 
 	var total int
-	if err := r.db.QueryRow(totalQuery, totalArgs...).Scan(&total); err != nil {
+	if err := r.db.QueryRow(countSql, countArgs...).Scan(&total); err != nil {
 		return nil, 0, err
 	}
 
 	return books, total, nil
-
 }
 
 func (r *BookRepositoryPostgres) GetByID(id int) (*models.Book, error) {
+	sql, args, err := sq.Select("id", "title", "author", "published_year", "created_at").
+		From("books").
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return nil, err
+	}
+
 	var b models.Book
-	err := r.db.QueryRow("SELECT id, title, author, published_year, created_at FROM books WHERE id=$1", id).
+	err = r.db.QueryRow(sql, args...).
 		Scan(&b.ID, &b.Title, &b.Author, &b.PublishedYear, &b.CreatedAt)
 	if err != nil {
 		return nil, err
@@ -82,18 +94,48 @@ func (r *BookRepositoryPostgres) GetByID(id int) (*models.Book, error) {
 }
 
 func (r *BookRepositoryPostgres) Create(book *models.Book) error {
-	err := r.db.QueryRow("INSERT INTO books (title, author, published_year) VALUES ($1, $2, $3) RETURNING id, created_at",
-		book.Title, book.Author, book.PublishedYear).Scan(&book.ID, &book.CreatedAt)
+	sql, args, err := sq.Insert("books").
+		Columns("title", "author", "published_year").
+		Values(book.Title, book.Author, book.PublishedYear).
+		Suffix("RETURNING id, created_at").
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	err = r.db.QueryRow(sql, args...).Scan(&book.ID, &book.CreatedAt)
 	return err
 }
 
 func (r *BookRepositoryPostgres) Update(book *models.Book) error {
-	_, err := r.db.Exec("UPDATE books SET title = $1, author = $2, published_year = $3 WHERE id = $4",
-		book.Title, book.Author, book.PublishedYear, book.ID)
+	sql, args, err := sq.Update("books").
+		Set("title", book.Title).
+		Set("author", book.Author).
+		Set("published_year", book.PublishedYear).
+		Where(sq.Eq{"id": book.ID}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(sql, args...)
 	return err
 }
 
 func (r *BookRepositoryPostgres) Delete(id int) error {
-	_, err := r.db.Exec("DELETE FROM books WHERE id=$1", id)
+	sql, args, err := sq.Delete("books").
+		Where(sq.Eq{"id": id}).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+
+	if err != nil {
+		return err
+	}
+
+	_, err = r.db.Exec(sql, args...)
 	return err
 }
