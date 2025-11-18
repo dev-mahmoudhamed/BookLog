@@ -14,4 +14,5 @@ type User struct {
 	Role      string    `json:"role"`       // e.g. "admin", "user"
 	CreatedAt time.Time `json:"created_at"` // Record creation timestamp
 	UpdatedAt time.Time `json:"updated_at"` // Optional update timestamp
+	DeletedAt time.Time `json:"deleted_at"` // Optional delete timestamp
 }

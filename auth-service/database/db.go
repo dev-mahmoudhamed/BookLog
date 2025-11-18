@@ -1,12 +1,12 @@
 package database
 
 import (
-	"bookLog/internal/config"
+	"authService/config"
 	"database/sql"
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // Postgres driver
 )
 
 func Connect(cfg *config.Config) (*sql.DB, error) {

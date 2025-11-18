@@ -1,4 +1,5 @@
-module bookLog
+module authService
+
 
 go 1.25.1
 
