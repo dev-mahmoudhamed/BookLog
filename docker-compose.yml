@@ -1,13 +1,11 @@
-version: "3.9"
-
 services:
-  postgres:
+  user-db:
     image: postgres
     container_name: main_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password_123
-      POSTGRES_DB: booklog
+      POSTGRES_DB: userdb
     ports:
       - "5432:5432"
     volumes:
@@ -24,15 +22,51 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      postgres:
+      user-db:
         condition: service_healthy
     environment:
       JWT_SECRET: supersecret
-      DB_HOST: postgres
+      DB_HOST: user-db
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: Password_123
       DB_NAME: booklog
+    volumes:
+      - ./user-service:/app
+  book-db:
+    image: postgres
+    container_name: book_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password_123
+      POSTGRES_DB: bookdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - book_data:/var/lib/postgresql
+      - ./docker/book-postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      retries: 5
 
+  book-service:
+    build: ./book-service
+    container_name: book_service
+    ports:
+      - "8081:8081"
+    depends_on:
+      book-db:
+        condition: service_healthy
+    environment:
+      JWT_SECRET: supersecret
+      DB_HOST: book-db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: Password_123
+      DB_NAME: bookdb
+    volumes:
+      - ./book-service:/app
 volumes:
   db_data:
+  book_data:
