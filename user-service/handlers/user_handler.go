@@ -1,34 +1,36 @@
 package handlers
 
 import (
-	"authService/internal/services"
 	"net/http"
+	"userService/internal/services"
 
 	"github.com/gin-gonic/gin"
 )
 
-type AuthHandler struct {
-	AuthService *services.AuthService
+type UserHandler struct {
+	userService *services.UserService
 }
 
-func NewUserHandler(authSvc *services.AuthService) *AuthHandler {
-	return &AuthHandler{AuthService: authSvc}
+type UserRegisterDto struct {
+	FulllName string `json:"full_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
 }
 
-func (h AuthHandler) Register(c *gin.Context) {
+func NewUserHandler(usrSrv *services.UserService) *UserHandler {
+	return &UserHandler{userService: usrSrv}
+}
 
-	var body struct {
-		FulllName string `json:"full_name"`
-		Email     string `json:"email"`
-		Password  string `json:"password"`
-	}
+func (h UserHandler) Register(c *gin.Context) {
+
+	var body UserRegisterDto
 
 	if err := c.BindJSON(&body); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid data"})
 		return
 	}
 
-	err := h.AuthService.Register(body.FulllName, body.Email, body.Password)
+	err := h.userService.Register(body.FulllName, body.Email, body.Password)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -37,7 +39,7 @@ func (h AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "user created"})
 }
 
-func (h AuthHandler) Login(c *gin.Context) {
+func (h UserHandler) Login(c *gin.Context) {
 
 	var body struct {
 		Email    string `json:"email"`
@@ -49,7 +51,7 @@ func (h AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	userToken, exp, err := h.AuthService.Login(body.Email, body.Password)
+	userToken, exp, err := h.userService.Login(body.Email, body.Password)
 
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})

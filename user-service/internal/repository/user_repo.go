@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"authService/internal/models"
+	"userService/internal/models"
 
 	"github.com/google/uuid"
 )

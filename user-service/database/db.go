@@ -1,10 +1,10 @@
 package database
 
 import (
-	"authService/config"
 	"database/sql"
 	"fmt"
 	"log"
+	"userService/config"
 
 	_ "github.com/lib/pq" // Postgres driver
 )

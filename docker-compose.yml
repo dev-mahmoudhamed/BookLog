@@ -3,7 +3,7 @@ version: "3.9"
 services:
   postgres:
     image: postgres
-    container_name: auth_postgres
+    container_name: main_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password_123
@@ -12,14 +12,15 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 5
 
-  auth-service:
-    build: .
-    container_name: auth_service
+  user-service:
+    build: ./user-service
+    container_name: user_service
     ports:
       - "8080:8080"
     depends_on:

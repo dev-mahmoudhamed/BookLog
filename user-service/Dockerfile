@@ -14,7 +14,7 @@ RUN go mod download
 COPY . .
 
 # Build the binary
-RUN go build -o auth-service .
+RUN go build -o user-service .
 
 # Step 2: Minimal image for running
 FROM alpine:3.18
@@ -22,11 +22,11 @@ FROM alpine:3.18
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/auth-service .
+COPY --from=builder /app/user-service .
 
 # Copy migrations if needed
 COPY ./migrations ./migrations
 
 EXPOSE 8080
 
-CMD ["./auth-service"]
+CMD ["./user-service"]

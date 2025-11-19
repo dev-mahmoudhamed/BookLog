@@ -1,25 +1,25 @@
 package services
 
 import (
-	"authService/internal/models"
-	"authService/internal/repository"
-	"authService/util"
 	"errors"
 	"time"
+	"userService/internal/models"
+	"userService/internal/repository"
+	"userService/util"
 
 	"github.com/google/uuid"
 )
 
-type AuthService struct {
+type UserService struct {
 	repo   repository.UserRepository
 	secret string
 }
 
-func NewAuthService(repo repository.UserRepository, secret string) *AuthService {
-	return &AuthService{repo: repo, secret: secret}
+func NewUserService(repo repository.UserRepository, secret string) *UserService {
+	return &UserService{repo: repo, secret: secret}
 }
 
-func (s *AuthService) Register(fullname, email, password string) error {
+func (s *UserService) Register(fullname, email, password string) error {
 	// check existing user by email
 	if _, err := s.repo.GetByEmail(email); err == nil {
 		return errors.New("user already exists")
@@ -45,7 +45,7 @@ func (s *AuthService) Register(fullname, email, password string) error {
 	return nil
 }
 
-func (s *AuthService) Login(email, password string) (string, time.Time, error) {
+func (s *UserService) Login(email, password string) (string, time.Time, error) {
 	user, err := s.repo.GetByEmail(email)
 	if err != nil {
 		return "", time.Time{}, errors.New("invalid credentials")

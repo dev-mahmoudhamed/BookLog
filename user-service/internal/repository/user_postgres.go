@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"authService/internal/models"
 	"database/sql"
 	"time"
+	"userService/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"

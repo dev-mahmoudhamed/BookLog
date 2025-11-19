@@ -1,13 +1,13 @@
 package main
 
 import (
-	"authService/config"
-	"authService/database"
-	"authService/handlers"
-	"authService/internal/repository"
-	"authService/internal/services"
-	"authService/middleware"
 	"log"
+	"userService/config"
+	"userService/database"
+	"userService/handlers"
+	"userService/internal/repository"
+	"userService/internal/services"
+	"userService/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -26,14 +26,14 @@ func main() {
 	}
 	defer db.Close()
 
-	authRepo := repository.NewUserRepositoryPostgres(db)
-	authService := services.NewAuthService(authRepo, cfg.JwtSecret)
-	authHandler := handlers.NewUserHandler(authService)
+	userRepo := repository.NewUserRepositoryPostgres(db)
+	userService := services.NewUserService(userRepo, cfg.JwtSecret)
+	userHandler := handlers.NewUserHandler(userService)
 
 	r := gin.Default()
 
-	r.POST("/register", authHandler.Register)
-	r.POST("/login", authHandler.Login)
+	r.POST("/register", userHandler.Register)
+	r.POST("/login", userHandler.Login)
 
 	auth := r.Group("/")
 	auth.Use(middleware.AuthMiddleware(cfg.JwtSecret))
