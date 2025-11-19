@@ -24,7 +24,7 @@ func LoadConfig() (*Config, error) {
 		DBUser:     getEnv("DB_USER", "postgres"),
 		DBPassword: getEnv("DB_PASSWORD", "postgres"),
 		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPort:     getEnv("DB_PORT", "5432"),
+		DBPort:     getEnv("DB_PORT", "5433"),
 		DBName:     getEnv("DB_NAME", "booklog"),
 		DBSSLMode:  getEnv("DB_SSLMODE", "disable"),
 		JwtSecret:  getEnv("JWT_SECRET", ""), // no default, must set in env

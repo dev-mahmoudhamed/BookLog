@@ -3,6 +3,7 @@ package handlers
 import (
 	"book-service/internal/models"
 	"book-service/internal/services"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -67,6 +68,8 @@ func (h *BookHandler) GetBooks(c *gin.Context) {
 			userBooks = append(userBooks, b)
 		}
 	}
+
+	log.Printf("Books count : %d", len(userBooks))
 
 	c.JSON(http.StatusOK, userBooks)
 }

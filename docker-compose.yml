@@ -5,9 +5,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password_123
-      POSTGRES_DB: userdb
+      POSTGRES_DB: usersdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - db_data:/var/lib/postgresql
       - ./docker/postgres-init:/docker-entrypoint-initdb.d
@@ -30,18 +30,17 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: Password_123
-      DB_NAME: booklog
-    volumes:
-      - ./user-service:/app
+      DB_NAME: usersdb
+
   book-db:
     image: postgres
     container_name: book_postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: Password_123
-      POSTGRES_DB: bookdb
+      POSTGRES_DB: booksdb
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - book_data:/var/lib/postgresql
       - ./docker/book-postgres-init:/docker-entrypoint-initdb.d
@@ -64,9 +63,22 @@ services:
       DB_PORT: 5432
       DB_USER: postgres
       DB_PASSWORD: Password_123
-      DB_NAME: bookdb
-    volumes:
-      - ./book-service:/app
+      DB_NAME: booksdb
+
+  gateway:
+    build: ./gateway
+    container_name: api_gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - user-service
+      - book-service
+    environment:
+      GATEWAY_AUTH_ENABLED: "true"
+      USER_SERVICE_URL: "http://user-service:8080"
+      BOOK_SERVICE_URL: "http://book-service:8081"
+      AUTH_HS_SECRET: supersecret
+      AUTH_ALGO: HS256
 volumes:
   db_data:
   book_data:
